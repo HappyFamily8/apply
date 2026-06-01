@@ -71,8 +71,6 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
 .empty-state{text-align:center;padding:48px 24px;color:var(--gray);}
 .empty-state i{font-size:40px;margin-bottom:12px;display:block;opacity:.5;}
 .empty-state p{font-size:14px;}
-
-/* ログイン画面 */
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a3a6b,#2d5fa8);z-index:9999;display:flex;align-items:center;justify-content:center;}
 .login-card{background:#fff;border-radius:16px;padding:36px 32px;max-width:360px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.3);text-align:center;}
 .login-logo{font-size:40px;margin-bottom:12px;}
@@ -83,8 +81,6 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
 .login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--blue),#2d5fa8);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);}
 .login-error{color:var(--red);font-size:12px;margin-top:8px;display:none;}
 .login-error.show{display:block;}
-
-/* モーダル */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .modal-overlay.open{display:flex;}
 .modal-box{background:var(--white);border-radius:14px;max-width:640px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.22);margin:auto;animation:slideUp .25s ease;}
@@ -119,7 +115,6 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
 </head>
 <body>
 
-<!-- ログイン画面 -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
     <div class="login-logo">🛡️</div>
@@ -180,8 +175,8 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
       <option value="エクセレント・ハッピー">エクセレント・ハッピー</option>
     </select>
     <button class="btn-tool btn-reload" onclick="refreshData()"><i class="fas fa-sync-alt"></i> 最新データ取得</button>
-    <button class="btn-tool btn-csv"   onclick="exportCSV()"><i class="fas fa-file-csv"></i> CSV出力</button>
-    <button class="btn-tool btn-excel" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Excel出力</button>
+    <button class="btn-tool btn-csv" onclick="exportCSV()"><i class="fas fa-file-csv"></i> CSV出力</button>
+    <button class="btn-tool btn-excel" onclick="exportExcel()"><i class="fas fa-file-excel"></i> 差し込み用Excel出力</button>
     <span class="record-count" id="record-count"></span>
   </div>
   <div class="table-wrap">
@@ -247,11 +242,11 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
 'use strict';
 
 // ============================================================
-//  ★★★ここを書き換えてください★★★
+//  設定
 // ============================================================
-const GAS_URL   = 'https://script.google.com/macros/s/AKfycbybE-INZTXnIqIVTcB545O7I43rdudYfHojUdv6eT4flVPNh91PY05OWNoxTFDE0k1u/exec';
-const GAS_TOKEN = 'happyfamily2026secret'; // 
-const ADMIN_PASSWORD = 'C2tsj89U'; // 
+const GAS_URL        = 'https://script.google.com/macros/s/AKfycbybE-INZTXnIqIVTcB545O7I43rdudYfHojUdv6eT4flVPNh91PY05OWNoxTFDE0k1u/exec';
+const GAS_TOKEN      = 'happyfamily2026secret';
+const ADMIN_PASSWORD = 'C2tsj89U';
 
 // ============================================================
 //  変数
@@ -280,7 +275,7 @@ function doLogin() {
 }
 
 // ============================================================
-//  GAS APIアクセス
+//  GAS API
 // ============================================================
 async function gasGet(params = {}) {
   const url = new URL(GAS_URL);
@@ -289,7 +284,6 @@ async function gasGet(params = {}) {
   const res = await fetch(url.toString());
   return res.json();
 }
-
 async function gasPost(body = {}) {
   const res = await fetch(GAS_URL, {
     method: 'POST',
@@ -320,14 +314,13 @@ async function loadData() {
     showToast('データ取得に失敗しました', 'error');
   }
 }
-
 function refreshData() { loadData(); }
 
 // ============================================================
 //  統計
 // ============================================================
 function updateStats() {
-  document.getElementById('stat-total').textContent   = allRecords.length;
+  document.getElementById('stat-total').textContent    = allRecords.length;
   document.getElementById('stat-pending').textContent  = allRecords.filter(r=>r.status==='未処理').length;
   document.getElementById('stat-done').textContent     = allRecords.filter(r=>r.status==='処理済').length;
   document.getElementById('stat-cancel').textContent   = allRecords.filter(r=>r.status==='キャンセル').length;
@@ -342,16 +335,16 @@ function applyFilters() {
   const status = document.getElementById('status-filter').value;
   const mtype  = document.getElementById('type-filter').value;
   filteredRecords = allRecords.filter(r => {
-    if (status && r.status!==status) return false;
+    if (status && r.status !== status) return false;
     if (mtype  && !(r.member_type||'').includes(mtype)) return false;
     if (q) {
-      const hay=[r.name,r.name_kana,r.phone,r.mobile,r.address].join(' ').toLowerCase();
+      const hay = [r.name, r.name_kana, r.phone, r.mobile, r.address].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
-  document.getElementById('record-count').textContent=`${filteredRecords.length} 件`;
-  currentPage=1;
+  document.getElementById('record-count').textContent = `${filteredRecords.length} 件`;
+  currentPage = 1;
   renderTable();
 }
 
@@ -359,23 +352,23 @@ function applyFilters() {
 //  テーブル描画
 // ============================================================
 function renderTable() {
-  const tbody=document.getElementById('data-tbody');
-  if (filteredRecords.length===0) {
-    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><i class="fas fa-inbox"></i><p>データがありません</p></div></td></tr>`;
-    document.getElementById('pagination').innerHTML='';
+  const tbody = document.getElementById('data-tbody');
+  if (filteredRecords.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-inbox"></i><p>データがありません</p></div></td></tr>`;
+    document.getElementById('pagination').innerHTML = '';
     return;
   }
-  const start=(currentPage-1)*PAGE_SIZE;
-  const pageData=filteredRecords.slice(start,start+PAGE_SIZE);
-  tbody.innerHTML=pageData.map((r,i)=>{
-    const no=start+i+1;
-    const total=Number(r.total)||0;
-    const addr=(r.address||'').substring(0,20)+((r.address||'').length>20?'...':'');
-    const typeColor=(r.member_type||'').includes('エクセレント')&&(r.member_type||'').includes('ハッピー')
-      ?'background:#e8eaf6;color:#3949ab'
-      :(r.member_type||'').includes('エクセレント')
-        ?'background:#fdecea;color:#c0392b'
-        :'background:#eaf6ee;color:#1e7e4a';
+  const start    = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredRecords.slice(start, start + PAGE_SIZE);
+  tbody.innerHTML = pageData.map((r, i) => {
+    const no    = start + i + 1;
+    const total = Number(r.total) || 0;
+    const addr  = (r.address||'').substring(0,20) + ((r.address||'').length > 20 ? '...' : '');
+    const typeColor = (r.member_type||'').includes('エクセレント') && (r.member_type||'').includes('ハッピー')
+      ? 'background:#e8eaf6;color:#3949ab'
+      : (r.member_type||'').includes('エクセレント')
+        ? 'background:#fdecea;color:#c0392b'
+        : 'background:#eaf6ee;color:#1e7e4a';
     return `<tr>
       <td class="cell-date">${no}</td>
       <td class="cell-date">${escHtml(r.contract_date||'—')}</td>
@@ -386,11 +379,11 @@ function renderTable() {
       <td><span class="type-badge" style="${typeColor}">${escHtml(r.member_type||'—')}</span></td>
       <td class="cell-date">${escHtml(r.phone||r.mobile||'—')}</td>
       <td class="cell-date">${escHtml(addr||'—')}</td>
-      <td class="cell-amount">${total>0?total.toLocaleString()+'円':'—'}</td>
+      <td class="cell-amount">${total > 0 ? total.toLocaleString()+'円' : '—'}</td>
       <td><span class="status-badge status-${escHtml(r.status||'未処理')}">${escHtml(r.status||'未処理')}</span></td>
       <td>
-        <button class="btn-action btn-view" onclick='openDetail(${i+start})'><i class="fas fa-eye"></i> 詳細</button>
-        <button class="btn-action btn-delete" onclick='confirmDelete(${i+start})'><i class="fas fa-trash"></i></button>
+        <button class="btn-action btn-view" onclick="openDetail(${i+start})"><i class="fas fa-eye"></i> 詳細</button>
+        <button class="btn-action btn-delete" onclick="confirmDelete(${i+start})"><i class="fas fa-trash"></i></button>
       </td>
     </tr>`;
   }).join('');
@@ -401,20 +394,20 @@ function renderTable() {
 //  ページネーション
 // ============================================================
 function renderPagination() {
-  const total=Math.ceil(filteredRecords.length/PAGE_SIZE);
-  if(total<=1){document.getElementById('pagination').innerHTML='';return;}
-  let html=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
-  for(let p=Math.max(1,currentPage-2);p<=Math.min(total,currentPage+2);p++){
-    html+=`<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  const total = Math.ceil(filteredRecords.length / PAGE_SIZE);
+  if (total <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+  for (let p = Math.max(1,currentPage-2); p <= Math.min(total,currentPage+2); p++) {
+    html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
   }
-  html+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
-  html+=`<span class="page-info">${currentPage} / ${total} ページ</span>`;
-  document.getElementById('pagination').innerHTML=html;
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+  html += `<span class="page-info">${currentPage} / ${total} ページ</span>`;
+  document.getElementById('pagination').innerHTML = html;
 }
-function goPage(p){
-  const total=Math.ceil(filteredRecords.length/PAGE_SIZE);
-  if(p<1||p>total)return;
-  currentPage=p;renderTable();
+function goPage(p) {
+  const total = Math.ceil(filteredRecords.length / PAGE_SIZE);
+  if (p < 1 || p > total) return;
+  currentPage = p; renderTable();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -422,10 +415,10 @@ function goPage(p){
 //  詳細モーダル
 // ============================================================
 function openDetail(idx) {
-  currentRecord=filteredRecords[idx];
-  if(!currentRecord)return;
-  const d=currentRecord;
-  document.getElementById('modal-body-content').innerHTML=`
+  currentRecord = filteredRecords[idx];
+  if (!currentRecord) return;
+  const d = currentRecord;
+  document.getElementById('modal-body-content').innerHTML = `
     <div class="detail-section">
       <div class="detail-section-title">基本情報</div>
       <div class="detail-grid">
@@ -443,7 +436,7 @@ function openDetail(idx) {
         <div class="detail-item full"><label>住所</label><span>〒${escHtml(d.address_zip||'')} ${escHtml(d.address||'—')}</span></div>
         <div class="detail-item"><label>電話番号</label><span>${escHtml(d.phone||'—')}</span></div>
         <div class="detail-item"><label>携帯番号</label><span>${escHtml(d.mobile||'—')}</span></div>
-        ${d.delivery_addr?`<div class="detail-item full"><label>お届け先</label><span>〒${escHtml(d.delivery_zip||'')} ${escHtml(d.delivery_addr)}</span></div>`:''}
+        ${d.delivery_addr ? `<div class="detail-item full"><label>お届け先</label><span>〒${escHtml(d.delivery_zip||'')} ${escHtml(d.delivery_addr)}</span></div>` : ''}
         <div class="detail-item"><label>書類お届け先</label><span>${escHtml(d.doc_delivery||'—')}</span></div>
       </div>
     </div>
@@ -453,12 +446,12 @@ function openDetail(idx) {
         ${d.br001?`<div class="detail-item full"><label>Br001（主契約）</label><span>${escHtml(d.br001)}</span></div>`:''}
         ${d.br102?`<div class="detail-item full"><label>Br102</label><span>${escHtml(d.br102)}</span></div>`:''}
         ${d.br103?`<div class="detail-item full"><label>Br103</label><span>${escHtml(d.br103)}</span></div>`:''}
-        <div class="detail-item"><label>エクセレント合計</label><span>${d.exc_total?Number(d.exc_total).toLocaleString()+'円':'—'}</span></div>
+        <div class="detail-item"><label>エクセレント合計</label><span>${d.exc_total ? Number(d.exc_total).toLocaleString()+'円' : '—'}</span></div>
         <div class="detail-item"><label>エクセレント決済</label><span>${escHtml(d.exc_payment||'—')}</span></div>
         ${d.campaign_applied?`<div class="detail-item"><label>キャンペーン</label><span style="color:#e65100;font-weight:bold">🎉 ${escHtml(d.campaign_applied)}</span></div>`:''}
         <div class="detail-item"><label>配送時間</label><span>${escHtml(d.exc_delivery_time||'—')}</span></div>
         ${d.happy_detail?`<div class="detail-item full"><label>②ハッピー商品</label><span style="white-space:pre-line">${escHtml(d.happy_detail)}</span></div>`:''}
-        <div class="detail-item"><label>ハッピー合計</label><span>${d.happy_total?Number(d.happy_total).toLocaleString()+'円':'—'}</span></div>
+        <div class="detail-item"><label>ハッピー合計</label><span>${d.happy_total ? Number(d.happy_total).toLocaleString()+'円' : '—'}</span></div>
         ${d.settlement_id?`<div class="detail-item"><label>決済ID</label><span>${escHtml(d.settlement_id)}</span></div>`:''}
         <div class="detail-item"><label>合計金額</label><span style="font-size:16px;color:#1a3a6b;font-weight:700">${Number(d.total||0).toLocaleString()}円</span></div>
       </div>
@@ -483,50 +476,46 @@ function openDetail(idx) {
     </div>`;
   document.getElementById('detail-modal').classList.add('open');
 }
-function closeDetailModal(){document.getElementById('detail-modal').classList.remove('open');currentRecord=null;}
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); currentRecord = null; }
 
 // ============================================================
 //  ステータス更新
 // ============================================================
 async function updateStatus(newStatus) {
-  if(!currentRecord)return;
+  if (!currentRecord) return;
   try {
-    const res=await gasPost({
-      action:'updateStatus',
-      row_index: currentRecord.row_index,
-      status: newStatus
-    });
-    if(!res.success)throw new Error(res.error);
-    currentRecord.status=newStatus;
-    const idx=allRecords.findIndex(r=>r.id===currentRecord.id);
-    if(idx>=0)allRecords[idx].status=newStatus;
-    updateStats();applyFilters();closeDetailModal();
-    showToast(`ステータスを「${newStatus}」に更新しました`,'success');
-  } catch(err){
-    showToast('更新に失敗しました：'+err.message,'error');
+    const res = await gasPost({ action:'updateStatus', row_index:currentRecord.row_index, status:newStatus });
+    if (!res.success) throw new Error(res.error);
+    currentRecord.status = newStatus;
+    const idx = allRecords.findIndex(r => r.id === currentRecord.id);
+    if (idx >= 0) allRecords[idx].status = newStatus;
+    updateStats(); applyFilters(); closeDetailModal();
+    showToast(`ステータスを「${newStatus}」に更新しました`, 'success');
+  } catch(err) {
+    showToast('更新に失敗しました：' + err.message, 'error');
   }
 }
 
 // ============================================================
 //  削除
 // ============================================================
-function confirmDelete(idx){
-  deleteTargetId=filteredRecords[idx];
+function confirmDelete(idx) {
+  deleteTargetId = filteredRecords[idx];
   document.getElementById('delete-modal').classList.add('open');
 }
-function closeDeleteModal(){deleteTargetId=null;document.getElementById('delete-modal').classList.remove('open');}
-async function executeDelete(){
-  if(!deleteTargetId)return;
+function closeDeleteModal() { deleteTargetId = null; document.getElementById('delete-modal').classList.remove('open'); }
+async function executeDelete() {
+  if (!deleteTargetId) return;
   try {
-    const res=await gasPost({action:'delete',row_index:deleteTargetId.row_index});
-    if(!res.success)throw new Error(res.error);
-    allRecords=allRecords.filter(r=>r.id!==deleteTargetId.id);
+    const res = await gasPost({ action:'delete', row_index:deleteTargetId.row_index });
+    if (!res.success) throw new Error(res.error);
+    allRecords = allRecords.filter(r => r.id !== deleteTargetId.id);
     closeDeleteModal();
-    if(allRecords.length===0)document.getElementById('noDataGuide').classList.add('show');
-    updateStats();applyFilters();
-    showToast('データを削除しました','success');
-  } catch(err){
-    showToast('削除に失敗しました：'+err.message,'error');
+    if (allRecords.length === 0) document.getElementById('noDataGuide').classList.add('show');
+    updateStats(); applyFilters();
+    showToast('データを削除しました', 'success');
+  } catch(err) {
+    showToast('削除に失敗しました：' + err.message, 'error');
     closeDeleteModal();
   }
 }
@@ -534,81 +523,179 @@ async function executeDelete(){
 // ============================================================
 //  CSV出力
 // ============================================================
-function exportCSV(){
-  if(filteredRecords.length===0){showToast('出力するデータがありません','error');return;}
-  const headers=['No.','申込ID','受付日時','申込日','ステータス','登録区分','会員区分','フリガナ','氏名','法人名','生年月日','性別','郵便番号','住所','電話番号','携帯番号','お届け先住所','書類お届け先','Br001','Br102','Br103','エクセレント合計','エクセレント決済','配送時間','ハッピー商品','ハッピー合計','合計金額','紹介者氏名','紹介者電話','概要書面','初回連絡了承'];
-  const rows=filteredRecords.map((r,i)=>[
-    i+1,r.id||'',r.created_at||'',r.contract_date||'',r.status||'',r.reg_type||'',r.member_type||'',
-    r.name_kana||'',r.name||'',r.corp_name||'',r.birth||'',r.gender||'',
-    r.address_zip||'',r.address||'',r.phone||'',r.mobile||'',
-    r.delivery_addr||'',r.doc_delivery||'',
-    r.br001||'',r.br102||'',r.br103||'',
-    r.exc_total||0,r.exc_payment||'',r.exc_delivery_time||'',
-    r.happy_detail||'',r.happy_total||0,r.total||0,
-    r.referrer_name||'',r.referrer_phone||'',r.gaiyou_check||'',r.confirm_contact||''
-  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
-  const csv='\uFEFF'+headers.join(',')+'\n'+rows.join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download=`会員登録データ_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+function exportCSV() {
+  if (filteredRecords.length === 0) { showToast('出力するデータがありません', 'error'); return; }
+  const headers = [
+    'No.','申込ID','受付日時','申込日','ステータス','登録区分','会員区分',
+    'フリガナ','氏名','法人名','生年月日','性別',
+    '郵便番号','住所','電話番号','携帯番号','お届け先住所','書類お届け先',
+    'Br001商品','Br001金額','Br102商品','Br102金額','Br103商品','Br103金額',
+    'エクセレント合計','エクセレント決済','配送時間',
+    'ハッピー商品','ハッピー合計','合計金額',
+    '紹介者氏名','紹介者電話','概要書面','初回連絡了承'
+  ];
+  const rows = filteredRecords.map((r, i) => [
+    i+1, r.id||'', r.created_at||'', r.contract_date||'', r.status||'',
+    r.reg_type||'', r.member_type||'', r.name_kana||'', r.name||'',
+    r.corp_name||'', r.birth||'', r.gender||'',
+    r.address_zip||'', r.address||'', r.phone||'', r.mobile||'',
+    r.delivery_addr||'', r.doc_delivery||'',
+    r.br001||'', '', r.br102||'', '', r.br103||'', '',
+    r.exc_total||0, r.exc_payment||'', r.exc_delivery_time||'',
+    r.happy_detail||'', r.happy_total||0, r.total||0,
+    r.referrer_name||'', r.referrer_phone||'', r.gaiyou_check||'', r.confirm_contact||''
+  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `会員登録データ_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
-  showToast(`${filteredRecords.length}件をCSV出力しました`,'success');
+  showToast(`${filteredRecords.length}件をCSV出力しました`, 'success');
 }
 
 // ============================================================
-//  Excel出力
+//  Excel出力（差し込み印刷対応版）
+// ★ 契約書印刷データ.xlsx の列順に完全一致
 // ============================================================
-function exportExcel(){
-  if(filteredRecords.length===0){showToast('出力するデータがありません','error');return;}
-  const headers=['No.','申込ID','受付日時','申込日','ステータス','登録区分','会員区分','フリガナ','氏名','法人名','生年月日','性別','郵便番号','住所','電話番号','携帯番号','お届け先住所','書類お届け先','Br001','Br102','Br103','エクセレント合計','エクセレント決済','配送時間','ハッピー商品','ハッピー合計','合計金額','紹介者氏名','紹介者電話','概要書面','初回連絡了承'];
-  const rows=filteredRecords.map((r,i)=>[
-    i+1,r.id||'',r.created_at||'',r.contract_date||'',r.status||'',r.reg_type||'',r.member_type||'',
-    r.name_kana||'',r.name||'',r.corp_name||'',r.birth||'',r.gender||'',
-    r.address_zip||'',r.address||'',r.phone||'',r.mobile||'',
-    r.delivery_addr||'',r.doc_delivery||'',
-    r.br001||'',r.br102||'',r.br103||'',
-    r.exc_total||0,r.exc_payment||'',r.exc_delivery_time||'',
-    r.happy_detail||'',r.happy_total||0,r.total||0,
-    r.referrer_name||'',r.referrer_phone||'',r.gaiyou_check||'',r.confirm_contact||''
-  ]);
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);
-  ws['!cols']=headers.map(()=>({wch:16}));
-  XLSX.utils.book_append_sheet(wb,ws,'会員登録データ');
-  XLSX.writeFile(wb,`会員登録データ_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast(`${filteredRecords.length}件をExcel出力しました`,'success');
+function exportExcel() {
+  if (filteredRecords.length === 0) { showToast('出力するデータがありません', 'error'); return; }
+
+  const headers = [
+    '会員番号', '契約日', '氏名', 'フリガナ', '生年月日', '性別',
+    '会員区分', '契約種別', '書類お届け先',
+    '契約住所（郵便番号）', '住所1', '住所2', '電話番号', '携帯番号', 'FAX番号',
+    '発送住所（郵便番号）', '住所1.1', '住所2.1', '電話番号.1', '携帯番号.1', 'FAX番号.1',
+    'エクセレント商品1', 'エクセレント金額1',
+    'エクセレント商品2', 'エクセレント金額2',
+    'エクセレント商品3', 'エクセレント金額3',
+    'エクセレント合計金額',
+    '水素ガス吸入器', '水素金額', '水素合計金額'
+  ];
+
+  const rows = filteredRecords.map((r, i) => {
+    // br001〜103は GAS側で「商品名　金額円」という文字列に結合されて返ってくる
+    // 差し込み用に商品名と金額を分離する
+    function splitProduct(str) {
+      if (!str) return { name: '', price: '' };
+      // 「商品名　11,000円」の形式から分離
+      const match = str.match(/^(.+?)　([\d,]+)円$/);
+      if (match) return { name: match[1], price: match[2].replace(/,/g, '') };
+      return { name: str, price: '' };
+    }
+
+    const p1 = splitProduct(r.br001);
+    const p2 = splitProduct(r.br102);
+    const p3 = splitProduct(r.br103);
+
+    // ハッピー商品から水素ガス吸入器を抽出
+    // happy_detail例: "水素ガス吸入器SOLUNA（ソルナ）　[現金振込]"
+    const happyLines  = (r.happy_detail || '').split('\n').filter(Boolean);
+    const h2Line      = happyLines.find(l => l.includes('水素ガス')) || '';
+    const h2Name      = h2Line ? h2Line.replace(/　\[.+\]/, '').trim() : '';
+    const h2Amount    = h2Name ? '374000' : '';
+
+    // お届け先：入力がある場合はお届け先、なければ契約者住所
+    const hasDelivery = !!(r.delivery_addr && r.delivery_addr !== r.address);
+    const sendZip     = hasDelivery ? r.delivery_zip  : r.address_zip;
+    const sendAddr1   = hasDelivery ? r.delivery_addr : r.address;
+    const sendAddr2   = hasDelivery ? (r.delivery_sama || '') : '';
+    const sendTel     = hasDelivery ? (r.delivery_tel || '') : r.phone;
+    const sendMobile  = hasDelivery ? '' : r.mobile;
+
+    return [
+      '',                           // 会員番号（空欄：後で手入力 or 別途採番）
+      r.contract_date  || '',       // 契約日
+      r.name           || '',       // 氏名
+      r.name_kana      || '',       // フリガナ
+      r.birth          || '',       // 生年月日
+      r.gender         || '',       // 性別
+      r.member_type    || '',       // 会員区分
+      r.reg_type       || '',       // 契約種別
+      r.doc_delivery   || '',       // 書類お届け先
+      r.address_zip    || '',       // 契約住所（郵便番号）
+      r.address        || '',       // 住所1
+      '',                           // 住所2（番地・部屋番号は住所1に含まれる）
+      r.phone          || '',       // 電話番号
+      r.mobile         || '',       // 携帯番号
+      '',                           // FAX番号
+      sendZip,                      // 発送住所（郵便番号）
+      sendAddr1,                    // 住所1.1
+      sendAddr2,                    // 住所2.1（様方）
+      sendTel,                      // 電話番号.1
+      sendMobile,                   // 携帯番号.1
+      '',                           // FAX番号.1
+      p1.name,                      // エクセレント商品1
+      p1.price ? Number(p1.price) : '',  // エクセレント金額1
+      p2.name,                      // エクセレント商品2
+      p2.price ? Number(p2.price) : '',  // エクセレント金額2
+      p3.name,                      // エクセレント商品3
+      p3.price ? Number(p3.price) : '',  // エクセレント金額3
+      r.exc_total      || '',       // エクセレント合計金額
+      h2Name,                       // 水素ガス吸入器
+      h2Amount ? Number(h2Amount) : '',  // 水素金額
+      r.happy_total    || '',       // 水素合計金額
+    ];
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // 列幅設定
+  const colWidths = [
+    8, 12, 12, 16, 14, 6,
+    16, 10, 14,
+    14, 30, 16, 14, 14, 10,
+    14, 30, 16, 14, 14, 10,
+    20, 10,
+    20, 10,
+    20, 10,
+    14,
+    20, 10, 12
+  ];
+  ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+  XLSX.utils.book_append_sheet(wb, ws, '契約書印刷データ');
+  XLSX.writeFile(wb, `契約書印刷データ_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${filteredRecords.length}件を差し込み印刷用Excelで出力しました`, 'success');
 }
 
 // ============================================================
 //  ユーティリティ
 // ============================================================
-function escHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function showToast(msg,type='info'){
-  const ex=document.getElementById('admin-toast');if(ex)ex.remove();
-  const t=document.createElement('div');t.id='admin-toast';
-  const colors={success:'#27ae60',error:'#c0392b',info:'#1a3a6b'};
-  Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:colors[type],color:'#fff',padding:'11px 22px',borderRadius:'8px',fontSize:'13px',fontWeight:'700',boxShadow:'0 4px 16px rgba(0,0,0,.2)',zIndex:'9999',opacity:'0',transition:'opacity .3s',maxWidth:'90vw'});
-  t.textContent=msg;document.body.appendChild(t);
-  requestAnimationFrame(()=>{t.style.opacity='1';});
-  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),350);},3000);
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg, type='info') {
+  const ex = document.getElementById('admin-toast'); if (ex) ex.remove();
+  const t = document.createElement('div'); t.id = 'admin-toast';
+  const colors = {success:'#27ae60', error:'#c0392b', info:'#1a3a6b'};
+  Object.assign(t.style, {
+    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+    background:colors[type], color:'#fff', padding:'11px 22px', borderRadius:'8px',
+    fontSize:'13px', fontWeight:'700', boxShadow:'0 4px 16px rgba(0,0,0,.2)',
+    zIndex:'9999', opacity:'0', transition:'opacity .3s', maxWidth:'90vw'
+  });
+  t.textContent = msg; document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 350); }, 3000);
 }
 
-document.querySelectorAll('.modal-overlay').forEach(el=>{
-  el.addEventListener('click',e=>{
-    if(e.target===el){
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) {
       el.classList.remove('open');
-      if(el.id==='detail-modal')currentRecord=null;
-      if(el.id==='delete-modal')deleteTargetId=null;
+      if (el.id === 'detail-modal') currentRecord = null;
+      if (el.id === 'delete-modal') deleteTargetId = null;
     }
   });
 });
 
 // ============================================================
-//  初期化（ログイン状態チェック）
+//  初期化
 // ============================================================
-window.onload=()=>{
-  if(sessionStorage.getItem('adminLoggedIn')==='1'){
-    document.getElementById('loginOverlay').style.display='none';
+window.onload = () => {
+  if (sessionStorage.getItem('adminLoggedIn') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
     loadData();
   }
 };
