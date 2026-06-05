@@ -221,6 +221,9 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
       <button class="btn-modal-status" onclick="updateStatus('処理済')"><i class="fas fa-check"></i> 処理済みにする</button>
       <button class="btn-modal-status" style="background:#e65100" onclick="updateStatus('キャンセル')"><i class="fas fa-ban"></i> キャンセル</button>
       <button class="btn-modal-status" style="background:#6c757d" onclick="updateStatus('未処理')"><i class="fas fa-redo"></i> 未処理に戻す</button>
+      <button class="btn-modal-status" style="background:#1b5e20;" onclick="exportContractExcel()">
+  <i class="fas fa-file-excel"></i> 契約書出力
+</button>
       <button class="btn-modal-cancel" onclick="closeDetailModal()">閉じる</button>
     </div>
   </div>
@@ -612,6 +615,218 @@ window.onload=()=>{
     loadData();
   }
 };
+// ============================================================
+//  契約書Excel出力 ここから
+// ============================================================
+
+// ---- ハッピー商品データをパース（分解）する ----
+function parseHappyProducts(record) {
+  const result = [
+    { name: '', price: 0, pay: '' },
+    { name: '', price: 0, pay: '' },
+  ];
+  try {
+    const hp = JSON.parse(record.happy_products || '[]');
+    hp.forEach((p, i) => {
+      if (i < 2) {
+        result[i].name  = p.name + (p.size ? ` (${p.size})` : '');
+        result[i].price = Number(p.total || 0);
+        result[i].pay   = p.payment || '';
+      }
+    });
+  } catch {
+    const lines = (record.happy_detail || '').split('\n').filter(Boolean);
+    lines.forEach((line, i) => {
+      if (i < 2) {
+        const payMatch  = line.match(/\[(.+)\]/);
+        result[i].pay   = payMatch ? payMatch[1] : '';
+        result[i].name  = line.replace(/　\[.+\]/, '').trim();
+        result[i].price = i === 0
+          ? (line.includes('SOLUNA') ? 374000 : 0)
+          : (line.includes('ハッピーウォーター') ? 352000 : 0);
+      }
+    });
+  }
+  return result;
+}
+
+// ---- Br商品データをパース（分解）する ----
+function parseBrProducts(record) {
+  const result = {
+    br001: { name: '', price: 0 },
+    br102: { name: '', price: 0 },
+    br103: { name: '', price: 0 },
+  };
+  try {
+    const ep = JSON.parse(record.exc_products || '[]');
+    ep.forEach(p => {
+      if (p.plan === 'Br001') {
+        result.br001.name  = p.name;
+        result.br001.price = Number(p.price || 0);
+      }
+      if (p.plan === 'Br102') {
+        result.br102.name  = p.name;
+        result.br102.price = Number(p.price || 0);
+      }
+      if (p.plan === 'Br103') {
+        result.br103.name  = p.name;
+        result.br103.price = Number(p.price || 0);
+      }
+    });
+  } catch {
+    const parse = (str) => {
+      if (!str) return { name: '', price: 0 };
+      const m = str.match(/^(.+?)　([\d,]+)円$/);
+      return m
+        ? { name: m[1].trim(), price: parseInt(m[2].replace(/,/g, '')) }
+        : { name: str, price: 0 };
+    };
+    result.br001 = parse(record.br001);
+    result.br102 = parse(record.br102);
+    result.br103 = parse(record.br103);
+  }
+  return result;
+}
+
+// ---- 指定したセルに値を書き込む ----
+function injectCell(ws, addr, value) {
+  const isNumber = typeof value === 'number';
+  if (!ws[addr]) ws[addr] = {};
+  ws[addr].v = value;
+  ws[addr].t = isNumber ? 'n' : 's';
+  if (isNumber && ws[addr].z === undefined) {
+    ws[addr].z = '#,##0';
+  }
+}
+
+// ---- メイン：契約書Excelを出力する ----
+async function exportContractExcel() {
+  if (!currentRecord) {
+    showToast('詳細画面を開いてから出力してください', 'error');
+    return;
+  }
+  const d = currentRecord;
+
+  try {
+    showToast('契約書を生成中...', 'info');
+
+    // テンプレートファイルを読み込む
+    const res = await fetch('contract_template.xlsx');
+    if (!res.ok) throw new Error(`テンプレートが見つかりません (${res.status})`);
+    const arrayBuffer = await res.arrayBuffer();
+
+    // SheetJSでExcelを読み込む
+    const wb = XLSX.read(arrayBuffer, {
+      type:       'array',
+      cellStyles: true,
+      cellDates:  true,
+    });
+
+    // 1枚目のシートを取得
+    const wsName = wb.SheetNames[0];
+    const ws     = wb.Sheets[wsName];
+
+    // 商品データを整形
+    const br    = parseBrProducts(d);
+    const happy = parseHappyProducts(d);
+
+    // ============================================================
+    // ★ セルへの差し込み（座標は全て確認済み）
+    // ============================================================
+
+    // 基本情報
+    injectCell(ws, 'C3',  d.contract_date      || ''); // 契約申込日
+    injectCell(ws, 'I3',  d.member_type         || ''); // 会員区分
+    injectCell(ws, 'C4',  d.name_kana           || ''); // フリガナ
+    injectCell(ws, 'C5',  d.name                || ''); // 氏名
+    injectCell(ws, 'C6',  d.corp_name           || ''); // 法人名（個人登録は空欄）
+
+    // 生年月日・性別・登録区分
+    injectCell(ws, 'C7',  d.birth               || ''); // 生年月日
+    injectCell(ws, 'I7',  d.gender              || ''); // 性別
+    injectCell(ws, 'M7',  d.reg_type            || ''); // 登録区分
+
+    // 契約者住所
+    injectCell(ws, 'C8',  d.address_zip         || ''); // 郵便番号
+    injectCell(ws, 'C9',  d.address_furi        || ''); // 住所フリガナ
+    injectCell(ws, 'C10', d.address             || ''); // 契約者住所
+    injectCell(ws, 'C12', d.phone               || ''); // 電話番号
+    injectCell(ws, 'H12', d.mobile              || ''); // 携帯番号
+    injectCell(ws, 'M12', d.fax                 || ''); // FAX番号
+
+    // お届け先住所
+    injectCell(ws, 'C14', d.delivery_zip        || ''); // お届け先〒
+    injectCell(ws, 'C15', d.delivery_furi       || ''); // お届け先フリガナ
+    injectCell(ws, 'C16', d.delivery_addr       || ''); // お届け先住所
+    injectCell(ws, 'C18', d.delivery_tel        || ''); // お届け先電話
+    injectCell(ws, 'H18', d.delivery_mobile     || ''); // お届け先携帯
+    injectCell(ws, 'M18', d.delivery_fax        || ''); // お届け先FAX
+    injectCell(ws, 'C19', d.doc_delivery        || ''); // 書類お届先
+
+    // ①エクセレント商品
+    injectCell(ws, 'C24', br.br001.name         || ''); // Br001商品名
+    injectCell(ws, 'I24', br.br001.price > 0 ? br.br001.price : ''); // Br001金額
+    injectCell(ws, 'L24',                               // キャンペーン備考
+      d.campaign_applied ? `🎉 ${d.campaign_applied}` : ''
+    );
+    injectCell(ws, 'N24', d.exc_delivery_time   || ''); // 時間指定
+
+    injectCell(ws, 'C25', br.br102.name         || ''); // Br102商品名
+    injectCell(ws, 'I25', br.br102.price > 0 ? br.br102.price : ''); // Br102金額
+
+    injectCell(ws, 'C26', br.br103.name         || ''); // Br103商品名
+    injectCell(ws, 'I26', br.br103.price > 0 ? br.br103.price : ''); // Br103金額
+
+    injectCell(ws, 'I28', Number(d.exc_total)   || 0);  // ①エクセレント合計
+    injectCell(ws, 'C29', d.exc_payment         || ''); // 契約方法
+
+    // ②ハッピー商品
+    injectCell(ws, 'A33', happy[0].name         || ''); // ハッピー商品名①
+    injectCell(ws, 'I33', happy[0].price > 0 ? happy[0].price : ''); // ハッピー金額①
+    injectCell(ws, 'L33', happy[0].pay          || ''); // ハッピー決済①
+
+    injectCell(ws, 'A34', happy[1].name         || ''); // ハッピー商品名②
+    injectCell(ws, 'I34', happy[1].price > 0 ? happy[1].price : ''); // ハッピー金額②
+    injectCell(ws, 'L34', happy[1].pay          || ''); // ハッピー決済②
+
+    injectCell(ws, 'I36', Number(d.happy_total) || 0);  // ②ハッピー合計
+    injectCell(ws, 'N36', d.settlement_id       || ''); // 決済ID
+
+    // 紹介者情報
+    injectCell(ws, 'A40', d.referrer_id         || ''); // 紹介者ID
+    injectCell(ws, 'C40', d.referrer_name       || ''); // 紹介者氏名
+    injectCell(ws, 'I40', d.referrer_phone      || ''); // 紹介者電話
+    injectCell(ws, 'L40', d.referrer_planner_no || ''); // 紹介者ブランチ番号
+
+    // 上位者情報
+    injectCell(ws, 'D41', d.superior_name       || ''); // 上位者氏名
+    injectCell(ws, 'I41', d.superior_id         || ''); // 上位者ID
+    injectCell(ws, 'N41', d.superior_br         || ''); // 上位者Br番号
+
+    // 確認事項
+    injectCell(ws, 'L45', d.confirm_contact     || ''); // 初回連絡了承
+
+    // ============================================================
+    // ファイル名を作ってダウンロード
+    // ============================================================
+    const safeName = (d.name || d.id || 'unknown')
+      .replace(/[\\/:*?"<>|]/g, '_');
+    const safeDate = (d.contract_date || '')
+      .replace(/[\/年月日\s]/g, '-').replace(/-+$/, '');
+    const fileName = `契約書_${safeName}_${safeDate}.xlsx`;
+
+    XLSX.writeFile(wb, fileName, { bookSST: false, cellStyles: true });
+    showToast(`${d.name || ''} さんの契約書を出力しました ✅`, 'success');
+
+  } catch (err) {
+    console.error(err);
+    showToast('契約書出力に失敗しました：' + err.message, 'error');
+  }
+}
+
+// ============================================================
+//  契約書Excel出力 ここまで
+// ============================================================
 </script>
 </body>
 </html>
