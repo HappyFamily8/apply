@@ -117,7 +117,6 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
 </head>
 <body>
 
-<!-- ログイン画面 -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
     <div class="login-logo">🛡️</div>
@@ -178,17 +177,16 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
       <option value="ハッピー">ハッピー</option>
       <option value="エクセレント・ハッピー">エクセレント・ハッピー</option>
     </select>
-    <button class="btn-tool btn-reload"  onclick="refreshData()">
+    <button class="btn-tool btn-reload" onclick="refreshData()">
       <i class="fas fa-sync-alt"></i> 最新データ取得
     </button>
-    <button class="btn-tool btn-csv"     onclick="exportCSV()">
+    <button class="btn-tool btn-csv" onclick="exportCSV()">
       <i class="fas fa-file-csv"></i> CSV出力
     </button>
-    <button class="btn-tool btn-excel"   onclick="exportExcel()">
+    <button class="btn-tool btn-excel" onclick="exportExcel()">
       <i class="fas fa-file-excel"></i> Excel出力
     </button>
-    <!-- ★追加：契約書印刷データ出力ボタン -->
-    <button class="btn-tool btn-print"   onclick="exportPrintData()">
+    <button class="btn-tool btn-print" onclick="exportPrintData()">
       <i class="fas fa-print"></i> 契約書印刷データ出力
     </button>
     <span class="record-count" id="record-count"></span>
@@ -239,6 +237,10 @@ body{font-family:var(--font);background:#eef1f6;color:#333;min-height:100vh;}
       <button class="btn-modal-status" style="background:#6c757d" onclick="updateStatus('未処理')">
         <i class="fas fa-redo"></i> 未処理に戻す
       </button>
+      <!-- ★個別契約書出力ボタン -->
+      <button class="btn-modal-status" style="background:#1b5e20" onclick="exportSinglePrintData()">
+        <i class="fas fa-file-excel"></i> 契約書出力
+      </button>
       <button class="btn-modal-cancel" onclick="closeDetailModal()">閉じる</button>
     </div>
   </div>
@@ -281,9 +283,6 @@ let currentRecord   = null;
 let deleteTargetId  = null;
 let searchTimer     = null;
 
-// ============================================================
-//  ログイン
-// ============================================================
 function doLogin() {
   const pass = document.getElementById('loginPass').value;
   if (pass === ADMIN_PASSWORD) {
@@ -296,9 +295,6 @@ function doLogin() {
   }
 }
 
-// ============================================================
-//  GAS API
-// ============================================================
 async function gasGet(params = {}) {
   const url = new URL(GAS_URL);
   url.searchParams.set('token', GAS_TOKEN);
@@ -316,9 +312,6 @@ async function gasPost(body = {}) {
   return res.json();
 }
 
-// ============================================================
-//  データ読み込み
-// ============================================================
 async function loadData() {
   document.getElementById('data-tbody').innerHTML =
     '<tr><td colspan="9" style="text-align:center;padding:32px;color:#6c757d">' +
@@ -328,7 +321,7 @@ async function loadData() {
     if (!json.success) throw new Error(json.error || '取得失敗');
     allRecords = json.data || [];
     if (allRecords.length === 0) document.getElementById('noDataGuide').classList.add('show');
-    else                         document.getElementById('noDataGuide').classList.remove('show');
+    else document.getElementById('noDataGuide').classList.remove('show');
     updateStats();
     applyFilters();
     showToast(`${allRecords.length}件のデータを取得しました`, 'success');
@@ -342,19 +335,13 @@ async function loadData() {
 
 function refreshData() { loadData(); }
 
-// ============================================================
-//  統計
-// ============================================================
 function updateStats() {
-  document.getElementById('stat-total').textContent   = allRecords.length;
-  document.getElementById('stat-pending').textContent  = allRecords.filter(r=>r.status==='未処理').length;
-  document.getElementById('stat-done').textContent     = allRecords.filter(r=>r.status==='処理済').length;
-  document.getElementById('stat-cancel').textContent   = allRecords.filter(r=>r.status==='キャンセル').length;
+  document.getElementById('stat-total').textContent  = allRecords.length;
+  document.getElementById('stat-pending').textContent = allRecords.filter(r=>r.status==='未処理').length;
+  document.getElementById('stat-done').textContent    = allRecords.filter(r=>r.status==='処理済').length;
+  document.getElementById('stat-cancel').textContent  = allRecords.filter(r=>r.status==='キャンセル').length;
 }
 
-// ============================================================
-//  フィルター
-// ============================================================
 function onSearchInput() { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 300); }
 function applyFilters() {
   const q      = document.getElementById('search-input').value.trim().toLowerCase();
@@ -374,9 +361,6 @@ function applyFilters() {
   renderTable();
 }
 
-// ============================================================
-//  テーブル描画
-// ============================================================
 function renderTable() {
   const tbody = document.getElementById('data-tbody');
   if (filteredRecords.length === 0) {
@@ -409,7 +393,7 @@ function renderTable() {
       <td class="cell-amount">${total > 0 ? total.toLocaleString()+'円' : '—'}</td>
       <td><span class="status-badge status-${escHtml(r.status||'未処理')}">${escHtml(r.status||'未処理')}</span></td>
       <td>
-        <button class="btn-action btn-view"   onclick='openDetail(${i+start})'>
+        <button class="btn-action btn-view" onclick='openDetail(${i+start})'>
           <i class="fas fa-eye"></i> 詳細
         </button>
         <button class="btn-action btn-delete" onclick='confirmDelete(${i+start})'>
@@ -421,9 +405,6 @@ function renderTable() {
   renderPagination();
 }
 
-// ============================================================
-//  ページネーション
-// ============================================================
 function renderPagination() {
   const total = Math.ceil(filteredRecords.length / PAGE_SIZE);
   if (total <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
@@ -444,9 +425,6 @@ function goPage(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ============================================================
-//  詳細モーダル
-// ============================================================
 function openDetail(idx) {
   currentRecord = filteredRecords[idx];
   if (!currentRecord) return;
@@ -465,36 +443,36 @@ function openDetail(idx) {
         <div class="detail-item"><label>会員区分</label><span>${escHtml(d.member_type||'—')}</span></div>
         <div class="detail-item"><label>フリガナ</label><span>${escHtml(d.name_kana||'—')}</span></div>
         <div class="detail-item"><label>氏名</label><span>${escHtml(d.name||'—')}</span></div>
-        ${d.corp_name ? `<div class="detail-item full"><label>法人名</label><span>${escHtml(d.corp_name)}</span></div>` : ''}
+        ${d.corp_name?`<div class="detail-item full"><label>法人名</label><span>${escHtml(d.corp_name)}</span></div>`:''}
         <div class="detail-item"><label>生年月日</label><span>${escHtml(d.birth||'—')}</span></div>
         <div class="detail-item"><label>性別</label><span>${escHtml(d.gender||'—')}</span></div>
         <div class="detail-item full"><label>住所</label>
           <span>〒${escHtml(d.address_zip||'')} ${escHtml(d.address||'—')}</span></div>
         <div class="detail-item"><label>電話番号</label><span>${escHtml(d.phone||'—')}</span></div>
         <div class="detail-item"><label>携帯番号</label><span>${escHtml(d.mobile||'—')}</span></div>
-        ${d.delivery_addr ? `<div class="detail-item full"><label>お届け先</label>
-          <span>〒${escHtml(d.delivery_zip||'')} ${escHtml(d.delivery_addr)}</span></div>` : ''}
+        ${d.delivery_addr?`<div class="detail-item full"><label>お届け先</label>
+          <span>〒${escHtml(d.delivery_zip||'')} ${escHtml(d.delivery_addr)}</span></div>`:''}
         <div class="detail-item"><label>書類お届け先</label><span>${escHtml(d.doc_delivery||'—')}</span></div>
       </div>
     </div>
     <div class="detail-section">
       <div class="detail-section-title">商品・金額</div>
       <div class="detail-grid">
-        ${d.br001 ? `<div class="detail-item full"><label>Br001（主契約）</label><span>${escHtml(d.br001)}</span></div>` : ''}
-        ${d.br102 ? `<div class="detail-item full"><label>Br102</label><span>${escHtml(d.br102)}</span></div>` : ''}
-        ${d.br103 ? `<div class="detail-item full"><label>Br103</label><span>${escHtml(d.br103)}</span></div>` : ''}
+        ${d.br001?`<div class="detail-item full"><label>Br001（主契約）</label><span>${escHtml(d.br001)}</span></div>`:''}
+        ${d.br102?`<div class="detail-item full"><label>Br102</label><span>${escHtml(d.br102)}</span></div>`:''}
+        ${d.br103?`<div class="detail-item full"><label>Br103</label><span>${escHtml(d.br103)}</span></div>`:''}
         <div class="detail-item"><label>エクセレント合計</label>
-          <span>${d.exc_total ? Number(d.exc_total).toLocaleString()+'円' : '—'}</span></div>
+          <span>${d.exc_total?Number(d.exc_total).toLocaleString()+'円':'—'}</span></div>
         <div class="detail-item"><label>エクセレント決済</label><span>${escHtml(d.exc_payment||'—')}</span></div>
-        ${d.campaign_applied ? `<div class="detail-item"><label>キャンペーン</label>
-          <span style="color:#e65100;font-weight:bold">🎉 ${escHtml(d.campaign_applied)}</span></div>` : ''}
+        ${d.campaign_applied?`<div class="detail-item"><label>キャンペーン</label>
+          <span style="color:#e65100;font-weight:bold">🎉 ${escHtml(d.campaign_applied)}</span></div>`:''}
         <div class="detail-item"><label>配送時間</label><span>${escHtml(d.exc_delivery_time||'—')}</span></div>
-        ${d.happy_detail ? `<div class="detail-item full"><label>②ハッピー商品</label>
-          <span style="white-space:pre-line">${escHtml(d.happy_detail)}</span></div>` : ''}
+        ${d.happy_detail?`<div class="detail-item full"><label>②ハッピー商品</label>
+          <span style="white-space:pre-line">${escHtml(d.happy_detail)}</span></div>`:''}
         <div class="detail-item"><label>ハッピー合計</label>
-          <span>${d.happy_total ? Number(d.happy_total).toLocaleString()+'円' : '—'}</span></div>
-        ${d.settlement_id ? `<div class="detail-item"><label>決済ID</label>
-          <span>${escHtml(d.settlement_id)}</span></div>` : ''}
+          <span>${d.happy_total?Number(d.happy_total).toLocaleString()+'円':'—'}</span></div>
+        ${d.settlement_id?`<div class="detail-item"><label>決済ID</label>
+          <span>${escHtml(d.settlement_id)}</span></div>`:''}
         <div class="detail-item"><label>合計金額</label>
           <span style="font-size:16px;color:#1a3a6b;font-weight:700">
             ${Number(d.total||0).toLocaleString()}円</span></div>
@@ -526,31 +504,19 @@ function closeDetailModal() {
   currentRecord = null;
 }
 
-// ============================================================
-//  ステータス更新
-// ============================================================
 async function updateStatus(newStatus) {
   if (!currentRecord) return;
   try {
-    const res = await gasPost({
-      action: 'updateStatus',
-      row_index: currentRecord.row_index,
-      status: newStatus
-    });
+    const res = await gasPost({ action:'updateStatus', row_index:currentRecord.row_index, status:newStatus });
     if (!res.success) throw new Error(res.error);
     currentRecord.status = newStatus;
     const idx = allRecords.findIndex(r => r.id === currentRecord.id);
     if (idx >= 0) allRecords[idx].status = newStatus;
     updateStats(); applyFilters(); closeDetailModal();
     showToast(`ステータスを「${newStatus}」に更新しました`, 'success');
-  } catch(err) {
-    showToast('更新に失敗しました：' + err.message, 'error');
-  }
+  } catch(err) { showToast('更新に失敗しました：'+err.message, 'error'); }
 }
 
-// ============================================================
-//  削除
-// ============================================================
 function confirmDelete(idx) {
   deleteTargetId = filteredRecords[idx];
   document.getElementById('delete-modal').classList.add('open');
@@ -562,7 +528,7 @@ function closeDeleteModal() {
 async function executeDelete() {
   if (!deleteTargetId) return;
   try {
-    const res = await gasPost({ action: 'delete', row_index: deleteTargetId.row_index });
+    const res = await gasPost({ action:'delete', row_index:deleteTargetId.row_index });
     if (!res.success) throw new Error(res.error);
     allRecords = allRecords.filter(r => r.id !== deleteTargetId.id);
     closeDeleteModal();
@@ -570,16 +536,13 @@ async function executeDelete() {
     updateStats(); applyFilters();
     showToast('データを削除しました', 'success');
   } catch(err) {
-    showToast('削除に失敗しました：' + err.message, 'error');
+    showToast('削除に失敗しました：'+err.message, 'error');
     closeDeleteModal();
   }
 }
 
-// ============================================================
-//  CSV出力
-// ============================================================
 function exportCSV() {
-  if (filteredRecords.length === 0) { showToast('出力するデータがありません', 'error'); return; }
+  if (filteredRecords.length === 0) { showToast('出力するデータがありません','error'); return; }
   const headers = ['No.','申込ID','受付日時','申込日','ステータス','登録区分','会員区分',
     'フリガナ','氏名','法人名','生年月日','性別','郵便番号','住所','電話番号','携帯番号',
     'お届け先住所','書類お届け先','Br001','Br102','Br103','エクセレント合計','エクセレント決済',
@@ -593,20 +556,17 @@ function exportCSV() {
     r.exc_total||0,r.exc_payment||'',r.exc_delivery_time||'',
     r.happy_detail||'',r.happy_total||0,r.total||0,
     r.referrer_name||'',r.referrer_phone||'',r.gaiyou_check||'',r.confirm_contact||''
-  ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
-  const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF'+headers.join(',')+'\n'+rows.join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download = `会員登録データ_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
-  showToast(`${filteredRecords.length}件をCSV出力しました`, 'success');
+  showToast(`${filteredRecords.length}件をCSV出力しました`,'success');
 }
 
-// ============================================================
-//  Excel出力（通常）
-// ============================================================
 function exportExcel() {
-  if (filteredRecords.length === 0) { showToast('出力するデータがありません', 'error'); return; }
+  if (filteredRecords.length === 0) { showToast('出力するデータがありません','error'); return; }
   const headers = ['No.','申込ID','受付日時','申込日','ステータス','登録区分','会員区分',
     'フリガナ','氏名','法人名','生年月日','性別','郵便番号','住所','電話番号','携帯番号',
     'お届け先住所','書類お届け先','Br001','Br102','Br103','エクセレント合計','エクセレント決済',
@@ -622,117 +582,192 @@ function exportExcel() {
     r.referrer_name||'',r.referrer_phone||'',r.gaiyou_check||'',r.confirm_contact||''
   ]);
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws['!cols'] = headers.map(() => ({ wch: 16 }));
+  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols'] = headers.map(()=>({wch:16}));
   XLSX.utils.book_append_sheet(wb, ws, '会員登録データ');
   XLSX.writeFile(wb, `会員登録データ_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast(`${filteredRecords.length}件をExcel出力しました`, 'success');
+  showToast(`${filteredRecords.length}件をExcel出力しました`,'success');
 }
 
 // ============================================================
-//  ★契約書印刷データ出力（差し込み印刷対応形式）
+//  印刷データ変換（GAS不要・ブラウザ内で完結）
 // ============================================================
-async function exportPrintData() {
-  if (filteredRecords.length === 0) {
-    showToast('出力するデータがありません', 'error');
-    return;
+function convertToPrintRecord(r) {
+  // 和暦→YYYYMMDD
+  function toYMD(str) {
+    if (!str) return '';
+    const m = str.match(/^(明治|大正|昭和|平成|令和)(\d+)年(\d+)月(\d+)日$/);
+    if (!m) return str;
+    const era = {'明治':1867,'大正':1911,'昭和':1925,'平成':1988,'令和':2018};
+    return `${era[m[1]]+parseInt(m[2])}${String(m[3]).padStart(2,'0')}${String(m[4]).padStart(2,'0')}`;
   }
-
-  showToast('契約書印刷データを生成中...', 'info');
-
-  try {
-    const ids = filteredRecords.map(r => r.id).join(',');
-    const url = new URL(GAS_URL);
-    url.searchParams.set('token', GAS_TOKEN);
-    url.searchParams.set('action', 'printData');
-    url.searchParams.set('ids', ids);
-
-    const res  = await fetch(url.toString());
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error);
-
-    const printData = json.data;
-    if (printData.length === 0) {
-      showToast('変換できるデータがありませんでした', 'error');
-      return;
+  // 住所分割
+  function splitAddr(full) {
+    if (!full) return {a1:'', a2:''};
+    const m = full.match(/^(.*?(?:市|区|町|村))(.*)/);
+    return m ? {a1:m[1], a2:m[2].trim()} : {a1:full, a2:''};
+  }
+  // 商品セル解析 "商品名　11,000円"
+  function parseProduct(s) {
+    if (!s) return {name:'', price:''};
+    const m = s.match(/^(.+?)[\s　]+([0-9,]+)円$/);
+    return m ? {name:m[1].trim(), price:m[2]} : {name:s, price:''};
+  }
+  // ハッピー商品解析
+  function parseHappy(s) {
+    if (!s) return {name:'', price:'', total:0};
+    if (s.includes('SOLUNA') || s.includes('水素ガス')) {
+      return {name:'水素ガス吸入器SOLUNA', price:'374,000', total:374000};
     }
-
-    // 契約書印刷データ.xlsx と完全に同じ列順
-    const headers = [
-      '会員番号','契約日','氏名','フリガナ','生年月日','性別',
-      '会員区分','契約種別','書類お届け先',
-      '契約住所（郵便番号）','住所1','住所2','電話番号','携帯番号','FAX番号',
-      '発送住所（郵便番号）','住所1.1','住所2.1','電話番号.1','携帯番号.1','FAX番号.1',
-      'エクセレント商品1','エクセレント金額1',
-      'エクセレント商品2','エクセレント金額2',
-      'エクセレント商品3','エクセレント金額3',
-      'エクセレント合計金額',
-      '水素ガス吸入器','水素金額','水素合計金額'
-    ];
-
-    const rows = printData.map(d => headers.map(h => d[h] ?? ''));
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws['!cols'] = [
-      {wch:10},{wch:12},{wch:14},{wch:18},{wch:12},{wch:6},
-      {wch:20},{wch:8},{wch:12},
-      {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
-      {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
-      {wch:30},{wch:10},{wch:30},{wch:10},{wch:30},{wch:10},
-      {wch:14},{wch:24},{wch:10},{wch:12}
-    ];
-
-    XLSX.utils.book_append_sheet(wb, ws, '契約書印刷データ');
-    const dateStr = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `契約書印刷データ_${dateStr}.xlsx`);
-    showToast(`${printData.length}件の契約書印刷データを出力しました`, 'success');
-
-  } catch(err) {
-    showToast('出力に失敗しました：' + err.message, 'error');
+    return {name:'', price:'', total:0};
   }
+
+  const addr    = splitAddr(r.address || '');
+  const delFull = r.delivery_addr || '';
+  const hasDel  = delFull.trim() !== '';
+  const del     = splitAddr(delFull);
+  const ex1     = parseProduct(r.br001 || '');
+  const ex2     = parseProduct(r.br102 || '');
+  const ex3     = parseProduct(r.br103 || '');
+  const hp      = parseHappy(r.happy_detail || '');
+  const zip1    = (r.address_zip  || '').replace(/[^0-9]/g,'');
+  const zip2    = (r.delivery_zip || '').replace(/[^0-9]/g,'');
+
+  return {
+    '会員番号':             '',
+    '契約日':               toYMD(r.contract_date || ''),
+    '氏名':                 r.name        || '',
+    'フリガナ':             r.name_kana   || '',
+    '生年月日':             toYMD(r.birth || ''),
+    '性別':                 (r.gender||'').replace('性',''),
+    '会員区分':             (r.member_type||'').includes('エクセレント') ? 'エクセレント' : 'ハッピー',
+    '契約種別':             (r.reg_type||'').replace('登録',''),
+    '書類お届け先':         r.doc_delivery || '',
+    '契約住所（郵便番号）': zip1,
+    '住所1':                addr.a1,
+    '住所2':                addr.a2,
+    '電話番号':             r.phone  || '',
+    '携帯番号':             r.mobile || '',
+    'FAX番号':              r.fax    || '',
+    // ★お届け先：空欄なら全て空欄
+    '発送住所（郵便番号）': hasDel ? zip2              : '',
+    '住所1.1':              hasDel ? del.a1            : '',
+    '住所2.1':              hasDel ? del.a2            : '',
+    '電話番号.1':           hasDel ? (r.delivery_tel||'') : '',
+    '携帯番号.1':           '',
+    'FAX番号.1':            '',
+    'エクセレント商品1':    ex1.name,
+    'エクセレント金額1':    ex1.price,
+    'エクセレント商品2':    ex2.name,
+    'エクセレント金額2':    ex2.price,
+    'エクセレント商品3':    ex3.name,
+    'エクセレント金額3':    ex3.price,
+    'エクセレント合計金額': r.exc_total || 0,
+    '水素ガス吸入器':       hp.name,
+    '水素金額':             hp.price,
+    '水素合計金額':         hp.total,
+  };
 }
 
 // ============================================================
-//  ユーティリティ
+//  一括出力（ツールバーボタン）
 // ============================================================
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function exportPrintData() {
+  if (filteredRecords.length === 0) { showToast('出力するデータがありません','error'); return; }
+  const headers = [
+    '会員番号','契約日','氏名','フリガナ','生年月日','性別',
+    '会員区分','契約種別','書類お届け先',
+    '契約住所（郵便番号）','住所1','住所2','電話番号','携帯番号','FAX番号',
+    '発送住所（郵便番号）','住所1.1','住所2.1','電話番号.1','携帯番号.1','FAX番号.1',
+    'エクセレント商品1','エクセレント金額1',
+    'エクセレント商品2','エクセレント金額2',
+    'エクセレント商品3','エクセレント金額3',
+    'エクセレント合計金額','水素ガス吸入器','水素金額','水素合計金額'
+  ];
+  const rows = filteredRecords.map(r => {
+    const d = convertToPrintRecord(r);
+    return headers.map(h => d[h] ?? '');
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [
+    {wch:10},{wch:12},{wch:14},{wch:18},{wch:12},{wch:6},
+    {wch:20},{wch:8},{wch:12},
+    {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
+    {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
+    {wch:30},{wch:10},{wch:30},{wch:10},{wch:30},{wch:10},
+    {wch:14},{wch:24},{wch:10},{wch:12}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '契約書印刷データ');
+  XLSX.writeFile(wb, `契約書印刷データ_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${filteredRecords.length}件の契約書印刷データを出力しました`,'success');
 }
-function showToast(msg, type = 'info') {
+
+// ============================================================
+//  個別出力（詳細モーダルの「契約書出力」ボタン）
+// ============================================================
+function exportSinglePrintData() {
+  if (!currentRecord) { showToast('詳細画面を開いてから出力してください','error'); return; }
+  const headers = [
+    '会員番号','契約日','氏名','フリガナ','生年月日','性別',
+    '会員区分','契約種別','書類お届け先',
+    '契約住所（郵便番号）','住所1','住所2','電話番号','携帯番号','FAX番号',
+    '発送住所（郵便番号）','住所1.1','住所2.1','電話番号.1','携帯番号.1','FAX番号.1',
+    'エクセレント商品1','エクセレント金額1',
+    'エクセレント商品2','エクセレント金額2',
+    'エクセレント商品3','エクセレント金額3',
+    'エクセレント合計金額','水素ガス吸入器','水素金額','水素合計金額'
+  ];
+  const d    = convertToPrintRecord(currentRecord);
+  const row  = headers.map(h => d[h] ?? '');
+  const wb   = XLSX.utils.book_new();
+  const ws   = XLSX.utils.aoa_to_sheet([headers, row]);
+  ws['!cols'] = [
+    {wch:10},{wch:12},{wch:14},{wch:18},{wch:12},{wch:6},
+    {wch:20},{wch:8},{wch:12},
+    {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
+    {wch:12},{wch:30},{wch:20},{wch:16},{wch:16},{wch:12},
+    {wch:30},{wch:10},{wch:30},{wch:10},{wch:30},{wch:10},
+    {wch:14},{wch:24},{wch:10},{wch:12}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '契約書印刷データ');
+  const name = currentRecord.name || 'unknown';
+  XLSX.writeFile(wb, `契約書_${name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`${name} さんの契約書データを出力しました`,'success');
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg, type='info') {
   const ex = document.getElementById('admin-toast');
   if (ex) ex.remove();
   const t = document.createElement('div');
   t.id = 'admin-toast';
-  const colors = { success:'#27ae60', error:'#c0392b', info:'#1a3a6b' };
+  const colors = {success:'#27ae60', error:'#c0392b', info:'#1a3a6b'};
   Object.assign(t.style, {
     position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
-    background: colors[type], color:'#fff', padding:'11px 22px',
+    background:colors[type], color:'#fff', padding:'11px 22px',
     borderRadius:'8px', fontSize:'13px', fontWeight:'700',
     boxShadow:'0 4px 16px rgba(0,0,0,.2)', zIndex:'9999',
     opacity:'0', transition:'opacity .3s', maxWidth:'90vw'
   });
   t.textContent = msg;
   document.body.appendChild(t);
-  requestAnimationFrame(() => { t.style.opacity = '1'; });
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 350); }, 3000);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; });
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),350); }, 3000);
 }
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => {
     if (e.target === el) {
       el.classList.remove('open');
-      if (el.id === 'detail-modal') currentRecord = null;
-      if (el.id === 'delete-modal') deleteTargetId = null;
+      if (el.id==='detail-modal') currentRecord = null;
+      if (el.id==='delete-modal') deleteTargetId = null;
     }
   });
 });
 
-// ============================================================
-//  初期化
-// ============================================================
 window.onload = () => {
   if (sessionStorage.getItem('adminLoggedIn') === '1') {
     document.getElementById('loginOverlay').style.display = 'none';
