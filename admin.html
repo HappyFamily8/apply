@@ -625,6 +625,11 @@ async function exportContractExcel() {
     showToast('詳細画面を開いてから出力してください', 'error');
     return;
   }
+  console.log('=== 送信データ確認 ===');
+  console.log('reg_type:', currentRecord.reg_type);
+  console.log('corp_name:', currentRecord.corp_name);
+  console.log('name:', currentRecord.name);
+  console.log('====================');
 
   const btn = document.querySelector(
     'button[onclick="exportContractExcel()"]'
