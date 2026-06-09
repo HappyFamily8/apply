@@ -1143,7 +1143,7 @@ function buildRecord() {
     address_zip:v('zip1'), address_furi:v('addrFuri1'), address:v('addr1'),
     phone:v('tel1'), mobile:v('mobile1'), fax:v('fax1'),
     delivery_zip:    v('zip2'),           // ← 入力がなければ空欄
-    delivery_furi:   v('addrFuri2'),      // ← 入力がなければ空欄
+    ddelivery_furi:   v('addr2') ? v('addrFuri2') : '',      // ← 入力がなければ空欄
     delivery_addr:   v('addr2'),          // ← 入力がなければ空欄
     delivery_sama:   v('sama'),           // ← そのまま
     delivery_tel:    v('tel2'),           // ← 入力がなければ空欄
