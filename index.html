@@ -1142,13 +1142,13 @@ function buildRecord() {
     gender:r('gender'), member_type:mt,
     address_zip:v('zip1'), address_furi:v('addrFuri1'), address:v('addr1'),
     phone:v('tel1'), mobile:v('mobile1'), fax:v('fax1'),
-    delivery_zip:v('addr2')?v('zip2'):v('zip1'),
-    delivery_furi:v('addr2')?v('addrFuri2'):v('addrFuri1'),
-    delivery_addr:v('addr2')||v('addr1'),
-    delivery_sama:v('sama'),
-    delivery_tel:v('addr2')?v('tel2'):v('tel1'),
-    delivery_mobile:v('addr2')?v('mobile2'):v('mobile1'),
-    delivery_fax:v('fax2'), doc_delivery:r('docDelivery'),
+    delivery_zip:    v('zip2'),           // ← 入力がなければ空欄
+    delivery_furi:   v('addrFuri2'),      // ← 入力がなければ空欄
+    delivery_addr:   v('addr2'),          // ← 入力がなければ空欄
+    delivery_sama:   v('sama'),           // ← そのまま
+    delivery_tel:    v('tel2'),           // ← 入力がなければ空欄
+    delivery_mobile: v('mobile2'),        // ← 入力がなければ空欄
+    delivery_fax:    v('fax2'),           // ← そのまま
     exc_products:JSON.stringify(excProducts),
     exc_total:parseYen(document.getElementById('excellentTotal').textContent),
     exc_payment:r('payMethod1'), exc_delivery_time:r('timeSlot'),
