@@ -625,11 +625,13 @@ async function exportContractExcel() {
     showToast('詳細画面を開いてから出力してください', 'error');
     return;
   }
-  console.log('=== 送信データ確認 ===');
-  console.log('reg_type:', currentRecord.reg_type);
-  console.log('corp_name:', currentRecord.corp_name);
-  console.log('name:', currentRecord.name);
-  console.log('====================');
+
+  // ★確認用ログ（後で削除してOK）
+  console.log('=== 契約書出力データ確認 ===');
+  console.log('reg_type  :', currentRecord.reg_type);
+  console.log('corp_name :', currentRecord.corp_name);
+  console.log('name      :', currentRecord.name);
+  console.log('===========================');
 
   const btn = document.querySelector(
     'button[onclick="exportContractExcel()"]'
@@ -639,15 +641,18 @@ async function exportContractExcel() {
   try {
     showToast('契約書を生成中です。少々お待ちください...', 'info');
 
-    // GASにリクエストを送る
     const res = await gasPost({
       action: 'createContract',
       record: currentRecord,
     });
 
+    // ★確認用ログ（後で削除してOK）
+    console.log('=== GASからの返答 ===');
+    console.log(res);
+    console.log('====================');
+
     if (!res.success) throw new Error(res.error || '生成に失敗しました');
 
-    // 返ってきたURLでダウンロード
     window.open(res.url, '_blank');
     showToast(
       `${currentRecord.name || ''} さんの契約書を出力しました ✅`,
@@ -661,10 +666,11 @@ async function exportContractExcel() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = '契約書出力';
+      btn.innerHTML = '<i class="fas fa-file-excel"></i> 契約書出力';
     }
   }
 }
+
 
 // ============================================================
 //  契約書Excel出力 ここまで
